@@ -26,7 +26,7 @@ Installation
 
 Clone the repository:
 
-git clone https://github.com/yourusername/interview-ready-ai.git
+git clone url
 cd interview-ready-ai/backend
 
 Install dependencies
