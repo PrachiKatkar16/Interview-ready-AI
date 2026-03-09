@@ -2,6 +2,7 @@ import { getInterviewReportById,getInterviewReports,generateInterviewReport} fro
 import { useContext } from "react";
 import { InterviewContext } from "../interview.context";
 
+
 export const useInterview=()=>{
     const context=useContext(InterviewContext)
 
@@ -24,15 +25,15 @@ export const useInterview=()=>{
         }
         return response.interviewReport
     }
-    const getReportById=async(interviewId)=>{
+    const getReportById = async (interviewId) => {
         setLoading(true)
-        let response=null
+        let response = null
         try {
-            response=await getInterviewReportById(interviewId)
+            response = await getInterviewReportById(interviewId)
             setReport(response.interviewReport)
         } catch (error) {
             console.log(error)
-        } finally{
+        } finally {
             setLoading(false)
         }
         return response.interviewReport

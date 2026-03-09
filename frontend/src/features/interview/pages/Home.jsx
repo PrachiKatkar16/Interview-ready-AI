@@ -1,11 +1,11 @@
-import React,{useState,useRef} from 'react'
+import React,{useState,useRef, useEffect} from 'react'
 import '../style/home.scss'
 import { useInterview } from '../hooks/useInterview'
 import { useNavigate } from 'react-router'
 
 const Home = () => {
 
-    const {loading,generateReport}=useInterview()
+    const {loading,generateReport,reports,getReports}=useInterview()
     const [jobDescription,setJobDescription]=useState("")
     const [selfDescription,setSelfDescription]=useState("")
     const resumeInputRef=useRef()
@@ -16,6 +16,10 @@ const Home = () => {
         const data=await generateReport({jobDescription,selfDescription,resumeFile})
         navigate(`/interview/${data._id}`)
     }
+    useEffect(()=>{
+        getReports()
+    },[])
+    
     if(loading){
         return(
         <main className='loading-screen'>
@@ -120,7 +124,7 @@ const Home = () => {
             </div>
 
             {/* Recent Reports List */}
-            {/* {reports.length > 0 && (
+            {reports.length > 0 && (
                 <section className='recent-reports'>
                     <h2>My Recent Interview Plans</h2>
                     <ul className='reports-list'>
@@ -133,7 +137,7 @@ const Home = () => {
                         ))}
                     </ul>
                 </section>
-            )} */}
+            )} 
 
             {/* Page Footer */}
             <footer className='page-footer'>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState,useEffect } from 'react'
 import '../style/interview.scss'
 import { useInterview } from '../hooks/useInterview'
+import {useNavigate, useParams} from 'react-router'
 
 const NAV_ITEMS = [
     { id: 'technical', label: 'Technical Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>) },
@@ -60,16 +61,25 @@ const RoadMapDay = ({ day }) => {
 
 const Interview = () => {
     const [activeNav, setActiveNav] = useState('technical')
-    const {report,loading}=useInterview()
+    const {report,getReportById,loading}=useInterview()
+    const {interviewId}= useParams()
 
-    // if (loading || !report) {
-    //     return (
-    //         <main className='loading-screen'>
-    //             <h1>Loading your interview plan...</h1>
-    //         </main>
-    //     )
-    // }
+   
+    useEffect(()=>{
+        if(interviewId){
+            getReportById(interviewId)
+        }
+    },[interviewId])
 
+   
+
+      if (loading || !report) {
+        return (
+            <main className='loading-screen'>
+                <h1>Loading your interview plan...</h1>
+            </main>
+        )
+    }
     const getScoreColor = () => {
         if (report.matchScore >= 80) return 'high'
         if (report.matchScore >= 60) return 'mid'
