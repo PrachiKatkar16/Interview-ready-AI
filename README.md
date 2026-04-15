@@ -7,6 +7,7 @@ The system analyzes a candidate's resume, self-description, and a job descriptio
 2. Technical and behavioral interview questions
 3. Skill gap analysis
 4. A preparation roadmap
+5. Live interview by AI agent
 
 
 Tech Stack
@@ -16,6 +17,7 @@ Backend
   Express.js
   MongoDB + Mongoose
   Groq AI API
+  Openrouter API
 
 Frontend
   Reactjs
