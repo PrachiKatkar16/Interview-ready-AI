@@ -5,6 +5,7 @@ const { zodToJsonSchema } = require("zod-to-json-schema")
 const html_to_pdf = require('html-pdf-node')
 
 
+
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
@@ -411,4 +412,38 @@ ${resumeData.education?.map(e => `
   return pdfBuffer
 }
 
-module.exports={generateInterviewReport,generateResumePdf}
+async function callAI(prompt) {
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "meta-llama/llama-3-8b-instruct",
+        messages: [
+          { role: "user", content: prompt }
+        ],
+      }),
+    })
+
+    const data = await res.json()
+
+    console.log("AI RAW RESPONSE:", data)
+
+    if (!data.choices || !data.choices.length) {
+      throw new Error("No choices returned from AI")
+    }
+
+    return data.choices[0].message.content
+
+  } catch (err) {
+    console.error("AI ERROR:", err)
+    return "Sorry, I couldn't process that. Can you repeat?"
+  }
+}
+
+
+
+module.exports={generateInterviewReport,generateResumePdf,callAI}

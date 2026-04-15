@@ -36,8 +36,8 @@ async function registerUser(req,res){
     },process.env.JWT_SECRET_KEY)
 
     res.cookie("token", token, {
-    httpOnly: true,
-    secure: true,
+    httpOnly: false,
+    secure: false,
     sameSite: "None"
     })
     res.status(201).json({

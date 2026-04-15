@@ -1,6 +1,7 @@
 const pdfParse=require('pdf-parse')
-const {generateInterviewReport,generateResumePdf}=require('../services/ai.service')
+const {generateInterviewReport,generateResumePdf,callAI}=require('../services/ai.service')
 const interviewReportModel=require('../models/interviewReport.model')
+const { Document, Packer, Paragraph, TextRun } = require("docx")
 
 
 async function generateInterviewReportController(req, res) {
@@ -102,11 +103,197 @@ async function generateResumePdfController(req, res) {
 
   }
 }
+// START INTERVIEW
+async function startInterview(req,res) {
+  try {
+    const { jd, resume, self } = req.body
+
+    const prompt = `
+You are a professional interviewer.
+
+Candidate Details:
+- Job Description: ${jd}
+- Resume: ${resume}
+- Self Description: ${self}
+
+Start the interview.
+Ask the first question (simple intro or resume-based).
+Keep it natural.
+`
+
+    const question = await callAI(prompt)
+
+if (!question) {
+  return res.status(500).json({
+    error: "AI did not return question"
+  })
+}
+
+res.json({ question })
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ 
+      error: err.message,
+      stack: err.stack 
+    })
+  }
+}
+
+//  NEXT QUESTION (CORE LOGIC)
+async function nextQuestion(req, res) {
+  try {
+    const { conversation } = req.body
+
+    if (!conversation || conversation.length === 0) {
+      return res.status(400).json({
+        error: "Conversation is empty"
+      })
+    }
+
+    // LIMIT QUESTIONS (example: 10)
+    const questionCount = conversation.filter(c => c.role === "ai").length
+
+    if (questionCount >= 10) {
+      return res.json({
+        completed: true,
+        message: "Interview completed"
+      })
+    }
+
+    // existing logic
+    const formattedConversation = conversation
+      .map(c => `${c.role}: ${c.message}`)
+      .join("\n")
+
+    const prompt = `
+You are a professional interviewer.
+
+Conversation so far:
+${formattedConversation}
+
+Rules:
+- Ask next relevant question
+- Do NOT repeat
+- Keep it short
+`
+
+    const question = await callAI(prompt)
+
+    res.json({ question })
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Failed to generate next question" })
+  }
+}
+
+
+// END INTERVIEW (REPORT)
+async function endInterview(req, res) {
+  try {
+    const { conversation } = req.body
+
+    if (!conversation || conversation.length <= 1) {
+      return res.status(400).json({
+        error: "Interview not completed. No sufficient data."
+      })
+    }
+
+    const formattedConversation = conversation
+      .map(c => `${c.role}: ${c.message}`)
+      .join("\n")
+
+    const prompt = `
+You are a strict interview evaluator.
+
+Interview conversation:
+${formattedConversation}
+
+IMPORTANT RULES:
+- If candidate has given very few answers → say interview incomplete
+- If answers are weak → give honest negative feedback
+- DO NOT give fake positive feedback
+- Base evaluation ONLY on actual answers
+
+Generate:
+1. Strengths (only if real)
+2. Weaknesses (mandatory)
+3. Suggestions (actionable)
+4. Score out of 10 (be strict)
+
+If interview is incomplete, clearly say:
+"Interview was not properly attempted"
+`
+
+    const report = await callAI(prompt)
+
+    return res.status(200).json({
+      report: report,
+      success: true
+    })
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Failed to generate report" })
+  }
+}
+
+async function downloadInterviewReport(req, res) {
+  try {
+    const { report } = req.body
+
+    if (!report) {
+      return res.status(400).json({
+        error: "Report text is required"
+      })
+    }
+
+    const doc = new Document({
+      sections: [
+        {
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Interview Report",
+                  bold: true,
+                  size: 32,
+                }),
+              ],
+            }),
+
+            new Paragraph(" "),
+            new Paragraph(report),
+          ],
+        },
+      ],
+    })
+
+    const buffer = await Packer.toBuffer(doc)
+
+    res.set({
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "Content-Disposition": "attachment; filename=Interview_Report.docx",
+    })
+
+    return res.send(buffer)
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Failed to generate report download" })
+  }
+}
 
 
 module.exports = {
     generateInterviewReportController,
     getInterviewReportByIdController,
     getInterviewReportsController,
-    generateResumePdfController
+    generateResumePdfController,
+    startInterview,
+    nextQuestion,
+    endInterview,
+    downloadInterviewReport
 }
